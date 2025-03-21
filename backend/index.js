@@ -1,19 +1,18 @@
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
+import express from 'express';
+import dotenv from 'dotenv';
+import testRoutes from './routes/test.route.js';
+import authRoutes from './routes/auth.route.js';
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
-const db = require("./config/db"); // juste pour tester
 
-app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("✅ Backend opérationnel !");
-});
+// Routes
+app.use('/api', testRoutes); // Test + protected route
+app.use('/api/auth', authRoutes); // Authentification
 
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur backend démarré sur http://localhost:${PORT}`);
+  console.log(`Serveur backend lancé sur http://localhost:${PORT}`);
 });
