@@ -8,18 +8,16 @@ import pool from '../config/db.js';
  * @param {string} user.password_hash
  * @param {string} user.role
  */
-export async function createUser({ full_name, phone_number, password, role }) {
-  const query = `
-    INSERT INTO users (full_name, phone_number, password, role)
-    VALUES ($1, $2, $3, $4)
-    RETURNING id, full_name, phone_number, role, created_at
-  `;
-
-  const values = [full_name, phone_number, password, role];
-
-  const result = await pool.query(query, values);
-  return result.rows[0];
+export async function createUser({ full_name, phone_number, password, role, is_validated }) {
+    const result = await pool.query(
+        `INSERT INTO users (full_name, phone_number, password, role, is_validated)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+        [full_name, phone_number, password, role, is_validated]
+    );
+    return result.rows[0];
 }
+
 
 // Fonction pour récupérer un utilisateur par son numéro de téléphone
 export async function getUserByPhoneNumber(phone_number) {

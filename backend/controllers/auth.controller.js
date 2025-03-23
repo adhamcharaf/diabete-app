@@ -5,15 +5,23 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 
-// fonction d’inscription
 export async function register(req, res) {
   const { full_name, phone_number, password, role } = req.body;
 
   try {
     const saltRounds = 10;
-    const password = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    const newUser = await createUser({ full_name, phone_number, password: password, role });
+    // Déterminer automatiquement la validation
+    const is_validated = (role === 'patient'|| role === 'agent');
+
+    const newUser = await createUser({
+      full_name,
+      phone_number,
+      password: hashedPassword,
+      role,
+      is_validated
+    });
 
     res.status(201).json({
       success: true,
@@ -21,13 +29,21 @@ export async function register(req, res) {
       user: newUser,
     });
   } catch (error) {
+    if (error.code === '23505') {
+      return res.status(400).json({
+        success: false,
+        message: 'Ce numéro de téléphone est déjà utilisé.',
+      });
+    }
+
     console.error('Erreur dans register:', error.message);
     res.status(500).json({
       success: false,
-      message: 'Erreur lors de l’inscription',
+      message: "Erreur lors de l’inscription",
     });
   }
 }
+
 
 // fonction de connexion
 export async function login(req, res) {
@@ -44,6 +60,14 @@ export async function login(req, res) {
       const passwordMatch = await bcrypt.compare(password, user.password);
       if (!passwordMatch) {
         return res.status(401).json({ success: false, message: "Mot de passe incorrect" });
+      }
+
+      // 🔐 Vérification de la validation du compte
+      if (user.role === 'medecin' && !user.is_validated) {
+        return res.status(403).json({
+          success: false,
+          message: "Votre compte n'a pas encore été validé par l'administration.",
+        });
       }
   
       // Générer un token JWT
