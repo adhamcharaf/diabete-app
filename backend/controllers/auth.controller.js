@@ -91,4 +91,15 @@ export async function login(req, res) {
     }
   }
 
+// Retourner les infos de l'utilisateur connecté
+export async function me(req, res) {
+  try {
+    res.json({ success: true, user: req.user });
+  } catch (error) {
+    console.error("Erreur dans me:", error.message);
+    res.status(500).json({ success: false, message: "Erreur lors de la récupération des infos utilisateur" });
+  }
+}
+
+
 
