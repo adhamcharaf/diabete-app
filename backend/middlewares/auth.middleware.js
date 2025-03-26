@@ -10,6 +10,12 @@ export function verifyToken(req, res, next) {
 
   try {
     const verified = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
+
+    // Vérifie si l'utilisateur est actif
+    if (verified.is_active === false) {
+      return res.status(403).json({ success: false, message: "Compte désactivé." });
+    }
+
     req.user = verified; // Attacher l'utilisateur vérifié à la requête
     next(); // Passer au middleware suivant
   } catch (err) {

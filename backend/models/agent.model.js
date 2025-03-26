@@ -1,17 +1,16 @@
-import db from '../config/db.js';
-import pkg from 'sequelize';
-const { DataTypes } = pkg;
+import pool from '../config/db.js';
 
-const Agent = db.define('agents', {
-    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    user_id: { type: DataTypes.INTEGER, allowNull: false },
-    region: { type: DataTypes.STRING, allowNull: true },
-    structure_sante: { type: DataTypes.STRING, allowNull: true },
-    poste: { type: DataTypes.STRING, allowNull: true },
-    justificatif_url: { type: DataTypes.TEXT, allowNull: true },
-    created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
-}, {
-    timestamps: false
-});
+export async function createAgent({ user_id, region, structure_sante, poste, justificatif_url }) {
+    const result = await pool.query(
+        `INSERT INTO agents (user_id, region, structure_sante, poste, justificatif_url, created_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())
+         RETURNING *`,
+        [user_id, region, structure_sante, poste, justificatif_url]
+    );
+    return result.rows[0];
+}
 
-export default Agent;
+export async function getAgentByUserId(user_id) {
+    const result = await pool.query(`SELECT * FROM agents WHERE user_id = $1`, [user_id]);
+    return result.rows[0];
+}

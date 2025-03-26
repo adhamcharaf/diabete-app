@@ -27,7 +27,7 @@ export async function createUser({ first_name, last_name, phone_number, password
 export async function getUserByPhoneNumber(phone_number) {
     try {
         const query = `
-      SELECT id, first_name, last_name, phone_number, password, role, is_validated
+      SELECT id, first_name, last_name, phone_number, password, role, is_validated, is_active
       FROM users
       WHERE phone_number = $1
     `;
