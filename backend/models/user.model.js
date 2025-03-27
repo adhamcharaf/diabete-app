@@ -10,12 +10,12 @@ import pool from '../config/db.js';
  * @param {string} user.role
  * @param {boolean} user.is_validated
  */
-export async function createUser({ first_name, last_name, phone_number, password, role, is_validated }) {
+export async function createUser({ first_name, last_name, phone_number,sexe, date_naissance, password, role, is_validated }) {
     const result = await pool.query(
-        `INSERT INTO users (first_name, last_name, phone_number, password, role, is_validated)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO users (first_name, last_name, phone_number, password, sexe, date_naissance, role, is_validated)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
-        [first_name, last_name, phone_number, password, role, is_validated]
+        [first_name, last_name, phone_number, password, sexe, date_naissance, role, is_validated]
     );
     return result.rows[0];
 }
@@ -27,7 +27,7 @@ export async function createUser({ first_name, last_name, phone_number, password
 export async function getUserByPhoneNumber(phone_number) {
     try {
         const query = `
-      SELECT id, first_name, last_name, phone_number, password, role, is_validated, is_active
+      SELECT id, first_name, last_name, phone_number, password, sexe, date_naissance, role, is_validated, is_active
       FROM users
       WHERE phone_number = $1
     `;

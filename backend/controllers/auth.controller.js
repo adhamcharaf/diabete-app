@@ -17,6 +17,8 @@ export async function register(req, res) {
     phone_number,
     password,
     role,
+    sexe,
+    date_naissance,
     ...additionalData
   } = req.body;
 
@@ -31,6 +33,8 @@ export async function register(req, res) {
       password: hashedPassword,
       role,
       is_validated,
+      sexe,
+      date_naissance
     });
 
     // 👥 Création du profil lié

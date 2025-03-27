@@ -21,13 +21,10 @@ export async function createPatient(req, res) {
         const result = await pool.query(
             `INSERT INTO patients (
         user_id,
-        sexe,
-        date_naissance,
         adresse,
         ville,
         medecin_id,
         profession,
-        niveau_scolaire,
         situation_familiale,
         nombre_enfants,
         telephone_proche,
