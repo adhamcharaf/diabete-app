@@ -9,7 +9,8 @@ import {
     accepterDemande,
     refuserDemande,
     modifierSuivi,
-    supprimerSuivi
+    supprimerSuivi,
+    getAlertes
 } from '../controllers/medecin.controller.js';
 import {verifyToken} from '../middlewares/auth.middleware.js';
 import {checkRole} from '../middlewares/role.middleware.js';
@@ -42,5 +43,8 @@ router.put('/demande/:id/refuser', verifyToken, checkRole('medecin'), refuserDem
 // Route pour supprimer/modifier un suivi
 router.put('/suivi/:id', verifyToken, checkRole('medecin'), modifierSuivi);
 router.delete('/suivi/:id', verifyToken, checkRole('medecin'), supprimerSuivi);
+
+// Routes pour recevoir les alertes
+router.get('/alertes', verifyToken, checkRole('medecin'), getAlertes);
 
 export default router;

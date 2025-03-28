@@ -423,6 +423,145 @@ export async function supprimerSuivi(req, res) {
 }
 
 
+// Alerte
+export async function getAlertes(req, res) {
+    const medecinId = req.user.id;
+
+    try {
+        const alertes = [];
+        const aujourdHui = new Date();
+
+        // 1️⃣ Récupérer tous les patients suivis par ce médecin
+        const { rows: patients } = await pool.query(
+            `SELECT u.id AS patient_id, u.first_name, u.last_name
+             FROM users u
+                      JOIN patients p ON p.user_id = u.id
+             WHERE p.medecin_id = $1`,
+            [medecinId]
+        );
+
+        for (const patient of patients) {
+            const patientId = patient.patient_id;
+            const fullName = `${patient.first_name} ${patient.last_name}`;
+
+            // 2️⃣ Récupérer tous les suivis du patient (triés du plus récent au plus ancien)
+            const { rows: suivis } = await pool.query(
+                `SELECT * FROM suivis WHERE patient_id = $1 ORDER BY date_suivi DESC`,
+                [patientId]
+            );
+
+            if (suivis.length === 0) continue;
+
+            // 3️⃣ Hyperglycémie critique > 250
+            const critique = suivis.find(s => s.glycémie > 250);
+            if (critique) {
+                alertes.push({
+                    patient_id: patientId,
+                    patient_name: fullName,
+                    alerte: "Hyperglycémie critique",
+                    type: "glycemie_critique",
+                    gravite: "haute",
+                    valeur: critique.glycémie,
+                    date: critique.date_suivi
+                });
+            }
+
+            // 4️⃣ Hypoglycémie < 70
+            const hypo = suivis.find(s => s.glycémie < 70);
+            if (hypo) {
+                alertes.push({
+                    patient_id: patientId,
+                    patient_name: fullName,
+                    alerte: "Hypoglycémie détectée",
+                    type: "hypoglycemie",
+                    gravite: "haute",
+                    valeur: hypo.glycémie,
+                    date: hypo.date_suivi
+                });
+            }
+
+            // 5️⃣ Hyperglycémies modérées > 180 (au moins 3 fois)
+            const glyHighs = suivis.filter(s => s.glycémie > 180);
+            if (glyHighs.length >= 3) {
+                alertes.push({
+                    patient_id: patientId,
+                    patient_name: fullName,
+                    alerte: "Hyperglycémie persistante",
+                    type: "glycemie_moderée",
+                    gravite: "moyenne",
+                    valeur: glyHighs.map(s => s.glycémie),
+                    date: glyHighs[0].date_suivi
+                });
+            }
+
+            // 6️⃣ Aucun suivi depuis 30 jours
+            const dernierSuivi = new Date(suivis[0].date_suivi);
+            const diffJours = (aujourdHui - dernierSuivi) / (1000 * 60 * 60 * 24);
+            if (diffJours > 30) {
+                alertes.push({
+                    patient_id: patientId,
+                    patient_name: fullName,
+                    alerte: "Aucun suivi depuis 30 jours",
+                    type: "absence_suivi",
+                    gravite: "moyenne",
+                    valeur: `${Math.floor(diffJours)} jours`,
+                    date: suivis[0].date_suivi
+                });
+            }
+
+            // 7️⃣ Perte de poids rapide > 5kg sur 30 jours
+            const suivis30Jours = suivis.filter(s => {
+                const date = new Date(s.date_suivi);
+                return (aujourdHui - date) / (1000 * 60 * 60 * 24) <= 30;
+            });
+
+            if (suivis30Jours.length >= 2) {
+                const poidsAncien = suivis30Jours[suivis30Jours.length - 1].poids;
+                const poidsRecent = suivis30Jours[0].poids;
+                const perte = poidsAncien - poidsRecent;
+
+                if (perte > 5) {
+                    alertes.push({
+                        patient_id: patientId,
+                        patient_name: fullName,
+                        alerte: "Perte de poids rapide",
+                        type: "perte_poids",
+                        gravite: "moyenne",
+                        valeur: `${perte.toFixed(1)} kg en 30j`,
+                        date: suivis30Jours[0].date_suivi
+                    });
+                }
+            }
+
+            // 8️⃣ Symptômes critiques détectés
+            const symptomesCritiques = ["douleur thoracique", "malaise", "palpitations", "vision trouble"];
+            const suiviCritique = suivis.find(s =>
+                s.symptomes &&
+                symptomesCritiques.some(crit => s.symptomes.toLowerCase().includes(crit))
+            );
+
+            if (suiviCritique) {
+                alertes.push({
+                    patient_id: patientId,
+                    patient_name: fullName,
+                    alerte: "Symptôme critique détecté",
+                    type: "symptome_critique",
+                    gravite: "moyenne",
+                    valeur: suiviCritique.symptomes,
+                    date: suiviCritique.date_suivi
+                });
+            }
+        }
+
+        res.json({ success: true, alertes });
+
+    } catch (error) {
+        console.error("Erreur getAlertes:", error.message);
+        res.status(500).json({ success: false, message: "Erreur serveur." });
+    }
+}
+
+
 
 
 
